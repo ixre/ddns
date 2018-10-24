@@ -1,5 +1,5 @@
 extern crate ddns;
-
+extern crate std;
 use ddns::net::ip;
 use std::sync::mpsc;
 use std::thread;

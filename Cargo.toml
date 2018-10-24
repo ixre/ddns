@@ -5,3 +5,4 @@ authors = ["jarryliu <jarrysix@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+hostname = "*"

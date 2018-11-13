@@ -1,6 +1,3 @@
-extern crate ddns;
-extern crate std;
-
 use ddns::dns;
 use ddns::dns::ip;
 use std::string::String;
@@ -45,12 +42,13 @@ fn main2() {
 }
 
 fn main() {
-    dns::sync_internal_ip();
+    //dns::sync_internal_ip(5);
+    dns::sync_public_ip(ip::SpNames::ORG3322,5);
     loop {
         unsafe {
-            if dns::INTERNAL_IP_ADDR.is_some() {
+            if dns::PUBLIC_IP_ADDR.is_some() {
                 println!("[ DDNS][ IP]: internal ip is {:?}",
-                         dns::INTERNAL_IP_ADDR.clone().unwrap());
+                         dns::PUBLIC_IP_ADDR.clone().unwrap());
             }
         }
     }

@@ -6,3 +6,5 @@ edition = "2018"
 
 [dependencies]
 hostname = "*"
+reqwest = "*"
+regex = "~1"

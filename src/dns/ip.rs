@@ -1,7 +1,5 @@
-extern crate hostname;
-extern crate std;
-
 use hostname::get_hostname;
+use regex::Regex;
 use std::error::Error;
 use std::io;
 use std::net;
@@ -28,20 +26,11 @@ pub enum SpNames {
 pub fn new<'a>(s: SpNames) -> &'a IpAddrFetch {
     match s {
         SpNames::Internal => &InternalIp {},
-        SpNames::IpIpNet => &IpIp {},
+        SpNames::IpIpNet => &IpIpNet {},
         SpNames::ORG3322 => &ORG3322 {},
         SpNames::MyIP => &MyExternalIP {}
     }
 }
-
-struct IpIp {}
-
-impl IpAddrFetch for IpIp {
-    fn addr<'a>(&self) -> String {
-        unimplemented!()
-    }
-}
-
 
 // Get local ip
 struct InternalIp {}
@@ -79,11 +68,34 @@ impl IpAddrFetch for InternalIp {
 }
 
 
+struct IpIpNet {}
+
+impl IpAddrFetch for IpIpNet {
+    fn addr<'a>(&self) -> String {
+        let req = reqwest::get("https://www.ipip.net/");
+        if req.is_ok() {
+            let body = req.unwrap().text().unwrap();
+            let re = Regex::new("<span>IP[^>]*><a[^>]+>(.+?)</a>").unwrap();
+            let cap = re.captures(&body);
+            if cap.is_some() {
+                return cap.unwrap().get(1).unwrap().as_str().to_owned();
+            }
+        }
+        return String::from("");
+    }
+}
+
+
 struct ORG3322 {}
 
 impl IpAddrFetch for ORG3322 {
     fn addr(&self) -> String {
-        unimplemented!()
+        let req = reqwest::get("http://members.3322.org/dyndns/getip");
+        if req.is_ok() {
+            let body = req.unwrap().text().unwrap();
+            return String::from_utf8(body.as_bytes()[0..body.len()-1].to_vec()).unwrap()
+        }
+        return String::from("");
     }
 }
 
@@ -91,7 +103,11 @@ struct MyExternalIP {}
 
 impl IpAddrFetch for MyExternalIP {
     fn addr(&self) -> String {
-        unimplemented!()
+        let req = reqwest::get("http://myexternalip.com/raw");
+        if req.is_ok() {
+           return req.unwrap().text().unwrap();
+        }
+        return String::from("");
     }
 }
 

@@ -1,11 +1,9 @@
 use ddns::dns;
 use ddns::dns::ip;
-use std::string::String;
 use std::sync::Arc;
 use std::sync::mpsc;
 use std::sync::Mutex;
 use std::thread;
-use std::time;
 use std::time::Duration;
 
 
@@ -42,7 +40,7 @@ fn main2() {
 }
 
 fn main() {
-    //dns::sync_internal_ip(5);
+    dns::sync_internal_ip(5);
     dns::sync_public_ip(ip::SpNames::ORG3322,5);
     loop {
         unsafe {

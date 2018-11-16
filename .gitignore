@@ -2,4 +2,5 @@
 dist
 Cargo.lock
 target/
+tmp
 **/*.rs.bk

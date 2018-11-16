@@ -1,8 +1,6 @@
 use hostname::get_hostname;
 use regex::Regex;
-use std::error::Error;
 use std::io;
-use std::net;
 use std::net::IpAddr;
 use std::net::ToSocketAddrs;
 

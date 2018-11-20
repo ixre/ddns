@@ -26,7 +26,7 @@ pub fn new<'a>(s: SpNames) -> &'a IpAddrFetch {
         SpNames::Internal => &InternalIp {},
         SpNames::IpIpNet => &IpIpNet {},
         SpNames::ORG3322 => &ORG3322 {},
-        SpNames::MyIP => &MyExternalIP {}
+        SpNames::MyIP => &MyExternalIP {},
     }
 }
 
@@ -34,9 +34,11 @@ pub fn new<'a>(s: SpNames) -> &'a IpAddrFetch {
 struct InternalIp {}
 
 impl InternalIp {
-    fn ip(&self) -> Result<String, io::Error> { // 这里是std::error::Error
+    fn ip(&self) -> Result<String, io::Error> {
+        // 这里是std::error::Error
         let host = get_hostname().unwrap();
-        let ip_arr: io::Result<Vec<IpAddr>> = (host.as_str(), 0).to_socket_addrs()
+        let ip_arr: io::Result<Vec<IpAddr>> = (host.as_str(), 0)
+            .to_socket_addrs()
             .map(|iter| iter.map(|socket_address| socket_address.ip()).collect());
         if ip_arr.is_ok() {
             let arr = ip_arr?; // 这里是io::Error
@@ -52,7 +54,7 @@ impl InternalIp {
                     }
                     return Ok(s);
                 }
-                IpAddr::V6(_ip6) => ()
+                IpAddr::V6(_ip6) => (),
             }
         }
         return Ok(String::from("127.0.0.1"));
@@ -64,7 +66,6 @@ impl IpAddrFetch for InternalIp {
         return self.ip().unwrap();
     }
 }
-
 
 struct IpIpNet {}
 
@@ -83,7 +84,6 @@ impl IpAddrFetch for IpIpNet {
     }
 }
 
-
 struct ORG3322 {}
 
 impl IpAddrFetch for ORG3322 {
@@ -91,7 +91,7 @@ impl IpAddrFetch for ORG3322 {
         let req = reqwest::get("http://members.3322.org/dyndns/getip");
         if req.is_ok() {
             let body = req.unwrap().text().unwrap();
-            return String::from_utf8(body.as_bytes()[0..body.len()-1].to_vec()).unwrap()
+            return String::from_utf8(body.as_bytes()[0..body.len() - 1].to_vec()).unwrap();
         }
         return String::from("");
     }
@@ -103,9 +103,8 @@ impl IpAddrFetch for MyExternalIP {
     fn addr(&self) -> String {
         let req = reqwest::get("http://myexternalip.com/raw");
         if req.is_ok() {
-           return req.unwrap().text().unwrap();
+            return req.unwrap().text().unwrap();
         }
         return String::from("");
     }
 }
-

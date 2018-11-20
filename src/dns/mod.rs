@@ -2,9 +2,9 @@ use std::error::Error;
 use std::thread;
 use std::time::Duration;
 
-pub mod ip;
 pub mod dnspod;
 pub mod dyn_;
+pub mod ip;
 
 // internal network ip address
 pub static mut INTERNAL_IP_ADDR: Option<String> = None;
@@ -47,7 +47,6 @@ pub const RECORD_TYPE_CNAME: i8 = 2;
 // Txt Record
 pub const RECORD_TYPE_TXT: i8 = 3;
 
-
 // Domain
 pub struct Domain<'a> {
     id: &'a str,
@@ -65,18 +64,31 @@ pub struct Record<'a> {
 }
 
 impl<'a> Record<'a> {
-    fn new(id: &'a str, domain_id: &'a str, sub: &'a str, record_type: i8,
-           value: &'a str, ttl: i16) -> Record<'a> {
-        return Record { id, domain_id, sub, record_type, value, ttl };
+    fn new(
+        id: &'a str,
+        domain_id: &'a str,
+        sub: &'a str,
+        record_type: i8,
+        value: &'a str,
+        ttl: i16,
+    ) -> Record<'a> {
+        return Record {
+            id,
+            domain_id,
+            sub,
+            record_type,
+            value,
+            ttl,
+        };
     }
 }
 
 // Name server like dyn,dnspod
 pub trait NameServer {
     // Get domain by name
-    fn get_domain(&self, name: &str) -> Domain;
+    fn get_domain<'a, 'b>(&self, name: &'a str) -> Domain<'b> where 'b: 'a;
     // Get sub domain, @sub is sub-domain name
-    fn get_sub_domain(&self, sub: &str) -> Record;
+    fn get_sub_domain<'a, 'b>(&self, sub: &'b str) -> Record<'b> where 'b: 'a;
     // Update dns record
     fn update_record<T: Error + Sized>(&self, record: Record) -> Result<String, T>;
 }

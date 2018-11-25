@@ -61,6 +61,7 @@ impl Domain {
 }
 
 // Dns record
+#[derive(Debug)]
 pub struct Record<'a> {
     id: &'a str,
     domain_id: &'a str,
@@ -93,11 +94,11 @@ impl<'a> Record<'a> {
 // Name server like dyn,dnspod
 pub trait NameServer {
     /// Get domain by name
-    fn get_domain(&mut self, name: &str) -> Option<&Domain>;
+    fn get_domain(&mut self, domain: &str) -> Option<&Domain>;
     /// Get sub domain, @sub is sub-domain name
-    fn get_sub_domain<'a, 'b>(&mut self, sub: &'b str) -> Record<'b>
-    where
-        'b: 'a;
+    fn get_record<'a, 'b>(&mut self, domain: &str, sub: &'b str) -> Vec<Record<'b>> where 'b: 'a;
+    // Get domain record and match record types.
+    fn get_record_type<'a, 'b>(&mut self, domain: &str, sub: &'b str, rt: i8) ->Option<Record<'b>> where 'b: 'a;
     /// Update dns record
     fn update_record<T: Error + Sized>(&self, record: Record) -> Result<String, T>;
 }

@@ -3,7 +3,7 @@ use std::error::Error;
 
 use super::{Domain, NameServer, Record};
 
-const api_server: &str = "https://dnsapi.cn";
+const DNS_API_SERVER: &str = "https://dnsapi.cn";
 
 pub struct DnsPod<'a> {
     api_id: &'a str,
@@ -37,7 +37,7 @@ impl<'a> DnsPod<'a> {
     }
 
     fn build_req(&self, api: &str) -> reqwest::RequestBuilder {
-        let mut url = String::from(api_server);
+        let mut url = String::from(DNS_API_SERVER);
         url.push_str("/");
         url.push_str(api);
         return reqwest::Client::new()
@@ -51,7 +51,7 @@ impl<'a> DnsPod<'a> {
         for k in params.keys() {
             p.push((*k, params.get(k).unwrap().as_str()));
         }
-        let rsp = self.build_req("Domain.List").form(&p).send();
+        let rsp = self.build_req(api).form(&p).send();
         if let Ok(mut r) = rsp {
             return r.text().unwrap();
         } else {
@@ -68,7 +68,7 @@ impl<'a> DnsPod<'a> {
             return;
         }
         let mut params = HashMap::new();
-        let rsp = self.post("get_domain", &mut params);
+        let rsp = self.post("Domain.List", &mut params);
         match serde_json::from_str::<DomainListResult>(&rsp) {
             Ok(arr) => {
                 for d in arr.domains {
@@ -82,19 +82,51 @@ impl<'a> DnsPod<'a> {
 }
 
 impl<'a> NameServer for DnsPod<'a> {
-    fn get_domain(&mut self, name: &str) -> Option<&Domain> {
+    fn get_domain(&mut self, domain: &str) -> Option<&Domain> {
         self.check_domains();
-        if self.domains.contains_key(name) {
-            return self.domains.get(name);
+        if self.domains.contains_key(domain) {
+            return self.domains.get(domain);
         }
         return None;
     }
 
-    fn get_sub_domain<'b, 'c>(&mut self, sub: &'b str) -> Record<'c>
-        where
-            'c: 'b,
-    {
-        unimplemented!()
+    fn get_record<'b, 'c>(&mut self, domain: &str, sub: &'b str) -> Vec<Record<'c>>
+        where 'c: 'b, {
+        if let Some(d) = self.get_domain(domain) {
+            let mut params = HashMap::new();
+            params.insert("domain_id", d.id.to_owned());
+            params.insert("keyword", sub.to_owned());
+            let rsp = self.post("Record.List", &mut params).replace("\"type\":", "\"_type\":");
+            match serde_json::from_str::<RecordListResult>(&rsp) {
+                Ok(arr) => {
+                    println!("{:#?}", arr);
+                    //for d in arr.records {
+                    //    self.domains
+                    //        .insert(d.name.to_owned(), Domain::new(d.id.to_string(), d.name));
+                    // }
+                }
+                Err(err) => println!("[ DDNS][ Dnspod]: fetch domain list failed :{}", err),
+            }
+            return vec![];
+        }
+        return vec![];
+
+
+        /*
+        match serde_json::from_str::<DomainListResult>(&rsp) {
+            Ok(arr) => {
+                for d in arr.domains {
+                    self.domains
+                        .insert(d.name.to_owned(), Domain::new(d.id.to_string(), d.name));
+                }
+            }
+            Err(err) => println!("[ DDNS][ Dnspod]: fetch domain list failed :{}", err),
+        }*/
+    }
+
+    fn get_record_type<'b, 'c>(&mut self, domain: &str, sub: &'b str, rt: i8) -> Option<Record<'c>> where 'c: 'b {
+        let arr = self.get_record(domain, sub);
+        return None;
     }
 
     fn update_record<T: Error + Sized>(&self, record: Record) -> Result<String, T> {
@@ -137,4 +169,27 @@ struct DomainDeserialize {
     is_vip: String,
     owner: String,
     records: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct RecordListResult {
+    records: Vec<RecordDeserialize>,
+}
+
+#[derive(Deserialize, Debug)]
+struct RecordDeserialize {
+    id: String,
+    ttl: String,
+    value: String,
+    enabled: String,
+    status: String,
+    updated_on: String,
+    name: String,
+    line: String,
+    line_id: String,
+    _type: String,
+    monitor_status: String,
+    remark: String,
+    use_aqb: String,
+    mx: String,
 }

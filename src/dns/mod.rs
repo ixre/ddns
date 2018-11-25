@@ -25,13 +25,20 @@ pub fn sync_internal_ip(sec: u8) {
     });
 }
 
+/*
+pub fn sync_ip<I:ip::IpAddrFetch, T>(sp: I, sec: u8, callback: T)
+    where T: Fn(&str) {
+    callback(&sp.addr());
+}*/
+
+
 pub fn sync_public_ip(sp: ip::SpNames, sec: u8) {
     thread::spawn(move || {
         let sp = ip::new(sp);
         loop {
-            // 获取本机的IP
+// 获取本机的IP
             let addr = sp.addr();
-            // 保存IP到全局静态变量
+// 保存IP到全局静态变量
             unsafe {
                 PUBLIC_IP_ADDR = Some(addr);
             }
@@ -46,6 +53,8 @@ pub const RECORD_TYPE_A: i8 = 1;
 pub const RECORD_TYPE_CNAME: i8 = 2;
 // Txt Record
 pub const RECORD_TYPE_TXT: i8 = 3;
+// MX Record
+pub const RECORD_TYPE_MX: i8 = 4;
 
 // Domain
 #[derive(Debug)]
@@ -54,40 +63,21 @@ pub struct Domain {
     name: String,
 }
 
-impl Domain {
-    pub fn new(id: String, name: String) -> Self {
-        return Domain { id, name };
-    }
-}
-
 // Dns record
 #[derive(Debug)]
-pub struct Record<'a> {
-    id: &'a str,
-    domain_id: &'a str,
-    sub: &'a str,
-    record_type: i8,
-    value: &'a str,
-    ttl: i16,
+pub struct Record {
+    pub id: String,
+    pub domain_id: String,
+    pub sub: String,
+    pub record_type: i8,
+    pub record_line: String,
+    pub value: String,
+    pub ttl: i16,
 }
 
-impl<'a> Record<'a> {
-    fn new(
-        id: &'a str,
-        domain_id: &'a str,
-        sub: &'a str,
-        record_type: i8,
-        value: &'a str,
-        ttl: i16,
-    ) -> Record<'a> {
-        return Record {
-            id,
-            domain_id,
-            sub,
-            record_type,
-            value,
-            ttl,
-        };
+impl Record {
+    pub fn set_value(&mut self, s: String) {
+        self.value = s;
     }
 }
 
@@ -96,9 +86,9 @@ pub trait NameServer {
     /// Get domain by name
     fn get_domain(&mut self, domain: &str) -> Option<&Domain>;
     /// Get sub domain, @sub is sub-domain name
-    fn get_record<'a, 'b>(&mut self, domain: &str, sub: &'b str) -> Vec<Record<'b>> where 'b: 'a;
+    fn get_record(&mut self, domain: &str, sub: &str) -> Vec<Record>;
     // Get domain record and match record types.
-    fn get_record_type<'a, 'b>(&mut self, domain: &str, sub: &'b str, rt: i8) ->Option<Record<'b>> where 'b: 'a;
+    fn get_record_type(&mut self, domain: &str, sub: &str, rt: i8) -> Option<Record>;
     /// Update dns record
-    fn update_record<T: Error + Sized>(&self, record: Record) -> Result<String, T>;
+    fn update_record(&mut self, domain: &str, record: &Record) -> Result<String, String>;
 }

@@ -9,16 +9,14 @@ pub struct DnsPod<'a> {
     api_id: &'a str,
     api_token: &'a str,
     domains: HashMap<String, Domain>,
-    check_second: i16,
 }
 
 impl<'a> DnsPod<'a> {
-    pub fn new(api_id: &'a str, api_token: &'a str, check_second: i16) -> Self {
+    pub fn new(api_id: &'a str, api_token: &'a str) -> Self {
         return DnsPod {
             api_id,
             api_token,
             domains: HashMap::new(),
-            check_second,
         };
     }
 
@@ -73,11 +71,31 @@ impl<'a> DnsPod<'a> {
             Ok(arr) => {
                 for d in arr.domains {
                     self.domains
-                        .insert(d.name.to_owned(), Domain::new(d.id.to_string(), d.name));
+                        .insert(d.name.to_owned(), Domain { id: d.id.to_string(), name: d.name });
                 }
             }
             Err(err) => println!("[ DDNS][ Dnspod]: fetch domain list failed :{}", err),
         }
+    }
+
+    fn record_type(&self, s: &str) -> i8 {
+        return match s {
+            "A" => super::RECORD_TYPE_A,
+            "CNAME" => super::RECORD_TYPE_CNAME,
+            "TXT" => super::RECORD_TYPE_TXT,
+            "MX" => super::RECORD_TYPE_TXT,
+            _ => 0_i8,
+        };
+    }
+
+    fn record_type_text(&self, i: i8) -> &str {
+        return match i {
+            super::RECORD_TYPE_A => "A",
+            super::RECORD_TYPE_CNAME => "CNAME",
+            super::RECORD_TYPE_TXT => "TXT",
+            super::RECORD_TYPE_TXT => "MX",
+            _ => "",
+        };
     }
 }
 
@@ -90,47 +108,68 @@ impl<'a> NameServer for DnsPod<'a> {
         return None;
     }
 
-    fn get_record<'b, 'c>(&mut self, domain: &str, sub: &'b str) -> Vec<Record<'c>>
-        where 'c: 'b, {
+    fn get_record(&mut self, domain: &str, sub: &str) -> Vec<Record> {
         if let Some(d) = self.get_domain(domain) {
+            let domainId = d.id.to_owned();
             let mut params = HashMap::new();
-            params.insert("domain_id", d.id.to_owned());
+            params.insert("domain_id", domainId.clone());
             params.insert("keyword", sub.to_owned());
-            let rsp = self.post("Record.List", &mut params).replace("\"type\":", "\"_type\":");
+            let rsp = self.post("Record.List", &mut params).replace("\"type\":", "\"type_\":");
             match serde_json::from_str::<RecordListResult>(&rsp) {
-                Ok(arr) => {
-                    println!("{:#?}", arr);
-                    //for d in arr.records {
-                    //    self.domains
-                    //        .insert(d.name.to_owned(), Domain::new(d.id.to_string(), d.name));
-                    // }
+                Ok(data) => {
+                    let mut arr = vec![];
+                    for r in data.records {
+                        // 从另外的对象拷贝数据，都需要to_owned()
+                        arr.push(Record {
+                            id: r.id.to_owned(),
+                            domain_id: domainId.clone(),
+                            sub: r.name.to_owned(),
+                            record_type: self.record_type(&r.type_),
+                            record_line: r.line.to_owned(),
+                            value: r.value.to_owned(),
+                            ttl: r.ttl.parse().unwrap(),
+                        })
+                    }
+                    return arr;
                 }
                 Err(err) => println!("[ DDNS][ Dnspod]: fetch domain list failed :{}", err),
             }
             return vec![];
         }
         return vec![];
-
-
-        /*
-        match serde_json::from_str::<DomainListResult>(&rsp) {
-            Ok(arr) => {
-                for d in arr.domains {
-                    self.domains
-                        .insert(d.name.to_owned(), Domain::new(d.id.to_string(), d.name));
-                }
-            }
-            Err(err) => println!("[ DDNS][ Dnspod]: fetch domain list failed :{}", err),
-        }*/
     }
 
-    fn get_record_type<'b, 'c>(&mut self, domain: &str, sub: &'b str, rt: i8) -> Option<Record<'c>> where 'c: 'b {
+    fn get_record_type(&mut self, domain: &str, sub: &str, rt: i8) -> Option<Record> {
         let arr = self.get_record(domain, sub);
+        for a in arr {
+            if a.sub == sub.to_owned() && a.record_type == rt {
+                return Some(a);
+            }
+        }
         return None;
     }
 
-    fn update_record<T: Error + Sized>(&self, record: Record) -> Result<String, T> {
-        unimplemented!()
+    fn update_record(&mut self, domain: &str, record: &Record) -> Result<String, String> {
+        if let Some(d) = self.get_domain(domain) {
+            let domain_id = d.id.to_owned();
+            let mut params = HashMap::new();
+            params.insert("domain_id", domain_id.clone());
+            params.insert("record_id", record.id.to_owned());
+            params.insert("sub_domain", record.sub.to_owned());
+            params.insert("record_type", self.record_type_text(record.record_type).to_owned());
+            params.insert("record_line", record.record_line.to_owned());
+            params.insert("value", record.value.to_owned());
+            params.insert("ttl", record.ttl.to_string());
+            let rsp = self.post("Record.Modify", &mut params).replace("\"type\":", "\"type_\":");
+            if let Ok(r) = serde_json::from_str::<DnsResult>(&rsp) {
+                if r.status.code == "1" {
+                    return Ok(r.status.message);
+                }
+                return Err(r.status.message);
+            }
+            return Err(rsp);
+        }
+        return Err(String::from("no such domain"));
     }
 
     /*
@@ -141,6 +180,17 @@ impl<'a> NameServer for DnsPod<'a> {
     fn update_record<T: Error + Sized>(&self, record: Record<'a>) -> Result<String, T> {
         unimplemented!()
     }*/
+}
+
+#[derive(Deserialize, Debug)]
+struct DnsResult {
+    status: Status
+}
+
+#[derive(Deserialize, Debug)]
+struct Status {
+    code: String,
+    message: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -187,7 +237,7 @@ struct RecordDeserialize {
     name: String,
     line: String,
     line_id: String,
-    _type: String,
+    type_: String,
     monitor_status: String,
     remark: String,
     use_aqb: String,

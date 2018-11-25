@@ -4,6 +4,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
+use ddns::conf;
 use ddns::dns;
 use ddns::dns::dnspod;
 use ddns::dns::ip;
@@ -45,7 +46,24 @@ fn main() {
     //dns::sync_internal_ip(5);
     //thread::sleep(Duration::from_secs(2));
 
-    let mut ns = dnspod::DnsPod::new("73841", "c45f9a093c15daf7c74bfb9bdccace10");
+    let cfg = conf::read_conf("ddns.conf");
+//    let mut ns_list = vec![];
+//    let mut record_list: Vec<&mut dns::Record> = vec![];
+//    for sp in cfg.dns_config {
+//        let mut ns = dnspod::DnsPod::new(sp.api_id, sp.api_token);
+//        for d in sp.domains {
+//            let record_name = d.domain.clone();
+//            for r in d.records {
+//                let mut record = ns.get_record_type(
+//                    &record_name,
+//                    &r.name,
+//                    dns::RECORD_TYPE_A).unwrap();
+//                //record_list.put(&mut record);
+//            }
+//        }
+//        ns_list.push(&mut ns);
+//    }
+    let mut ns = dnspod::DnsPod::new("73841".to_owned(), "c45f9a093c15daf7c74bfb9bdccace10".to_owned());
     let domain = "to2.net";
     let sub_domain = "*.dev";
     let mut record = ns.get_record_type(domain, sub_domain, dns::RECORD_TYPE_A);

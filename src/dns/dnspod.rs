@@ -5,14 +5,14 @@ use super::{Domain, NameServer, Record};
 
 const DNS_API_SERVER: &str = "https://dnsapi.cn";
 
-pub struct DnsPod<'a> {
-    api_id: &'a str,
-    api_token: &'a str,
-    domains: HashMap<String, Domain>,
+pub struct DnsPod {
+    pub api_id: String,
+    pub api_token:String,
+    pub domains: HashMap<String, Domain>,
 }
 
-impl<'a> DnsPod<'a> {
-    pub fn new(api_id: &'a str, api_token: &'a str) -> Self {
+impl DnsPod {
+    pub fn new(api_id:String, api_token:String) -> Self {
         return DnsPod {
             api_id,
             api_token,
@@ -99,7 +99,7 @@ impl<'a> DnsPod<'a> {
     }
 }
 
-impl<'a> NameServer for DnsPod<'a> {
+impl NameServer for DnsPod{
     fn get_domain(&mut self, domain: &str) -> Option<&Domain> {
         self.check_domains();
         if self.domains.contains_key(domain) {

@@ -48,6 +48,7 @@ pub const RECORD_TYPE_CNAME: i8 = 2;
 pub const RECORD_TYPE_TXT: i8 = 3;
 
 // Domain
+#[derive(Debug)]
 pub struct Domain<'a> {
     id: &'a str,
     name: &'a str,
@@ -85,10 +86,10 @@ impl<'a> Record<'a> {
 
 // Name server like dyn,dnspod
 pub trait NameServer {
-    // Get domain by name
-    fn get_domain<'a, 'b>(&self, name: &'a str) -> Domain<'b> where 'b: 'a;
-    // Get sub domain, @sub is sub-domain name
+    /// Get domain by name
+    fn get_domain(&self, name: &str) -> Option<Domain>;
+    /// Get sub domain, @sub is sub-domain name
     fn get_sub_domain<'a, 'b>(&self, sub: &'b str) -> Record<'b> where 'b: 'a;
-    // Update dns record
+    /// Update dns record
     fn update_record<T: Error + Sized>(&self, record: Record) -> Result<String, T>;
 }

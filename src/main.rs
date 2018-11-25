@@ -46,8 +46,8 @@ fn main() {
 
     thread::sleep(Duration::from_secs(5));
 
-    let ns = dnspod::DnsPod::new("73841", "c45f9a093c15daf7c74bfb9bdccace10", "to2.net", "*.dev", 5);
-    ns.get_domain("");
+    let ns = dnspod::DnsPod::new("73841", "c45f9a093c15daf7c74bfb9bdccace10", 5);
+    println!("{:?}",ns.get_domain("to2.net").unwrap());
     /*
     loop {
         unsafe {

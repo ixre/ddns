@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::error::Error;
+
 use super::{Domain, NameServer, Record};
 
 const api_server: &str = "https://dnsapi.cn";
@@ -8,15 +9,14 @@ const api_server: &str = "https://dnsapi.cn";
 pub struct DnsPod<'a> {
     api_id: &'a str,
     api_token: &'a str,
-    domain: &'a str,
-    sub_domains: &'a str,
+    domains: HashMap<String, Domain<'a>>,
+    //sub_domains: &'a str,
     check_second: i16,
 }
 
 impl<'a> DnsPod<'a> {
-    pub fn new(api_id: &'a str, api_token: &'a str, domain: &'a str,
-               sub_domains: &'a str, check_second: i16) -> Self {
-        return DnsPod { api_id, api_token, domain, sub_domains, check_second };
+    pub fn new(api_id: &'a str, api_token: &'a str, check_second: i16) -> Self {
+        return DnsPod { api_id, api_token, domains: HashMap::new(), check_second };
     }
 
     fn get_login_token(&self) -> String {
@@ -42,7 +42,6 @@ impl<'a> DnsPod<'a> {
             .header("User-Agent", "Rust-ddns/1.0(jarrysix@gmail.com)");
     }
 
-
     fn post(&self, api: &str, params: &mut HashMap<&str, String>) -> String {
         self.append_params(params);
         let mut p = vec![];
@@ -52,21 +51,27 @@ impl<'a> DnsPod<'a> {
         let rsp = self.build_req("Domain.List")
             .form(&p)
             .send();
-
         if let Ok(mut r) = rsp {
-            println!("{:?}", r.text().unwrap());
+            return r.text().unwrap();
         } else {
             println!("[ DDNS][ DnsPod]: Get domain fail,{}", rsp.err().unwrap());
         }
         return String::from("");
     }
+    fn check_domains(&self) {
+        if self.domains.len() > 0 {
+            return;
+        }
+        let mut params = HashMap::new();
+        let rsp = self.post("get_domain", &mut params);
+        println!("{}", rsp);
+    }
 }
 
 impl<'a> NameServer for DnsPod<'a> {
-    fn get_domain<'b, 'c>(&self, name: &'b str) -> Domain<'c> where 'c: 'b {
-        let mut params = HashMap::new();
-        self.post("get_domain", &mut params);
-        return Domain { id: "", name: "" };
+    fn get_domain(&self, name: &str) -> Option<Domain> {
+        self.check_domains();
+        return Some(Domain { id: "", name: "" });
     }
 
     fn get_sub_domain<'b, 'c>(&self, sub: &'b str) -> Record<'c> where 'c: 'b {

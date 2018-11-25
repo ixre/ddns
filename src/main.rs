@@ -2,8 +2,8 @@ use ddns::dns;
 use ddns::dns::dnspod;
 use ddns::dns::ip;
 use ddns::dns::NameServer;
-use std::sync::Arc;
 use std::sync::mpsc;
+use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
@@ -44,10 +44,10 @@ fn main() {
     dns::sync_internal_ip(5);
     dns::sync_public_ip(ip::SpNames::ORG3322, 5);
 
-    thread::sleep(Duration::from_secs(5));
+    thread::sleep(Duration::from_secs(2));
 
-    let ns = dnspod::DnsPod::new("73841", "c45f9a093c15daf7c74bfb9bdccace10", 5);
-    println!("{:?}",ns.get_domain("to2.net").unwrap());
+    let mut ns = dnspod::DnsPod::new("73841", "c45f9a093c15daf7c74bfb9bdccace10", 5);
+    println!("{:?}", ns.get_domain("to2.net").unwrap());
     /*
     loop {
         unsafe {

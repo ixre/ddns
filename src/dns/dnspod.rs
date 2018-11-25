@@ -5,18 +5,21 @@ use super::{Domain, NameServer, Record};
 
 const api_server: &str = "https://dnsapi.cn";
 
-
 pub struct DnsPod<'a> {
     api_id: &'a str,
     api_token: &'a str,
-    domains: HashMap<String, Domain<'a>>,
-    //sub_domains: &'a str,
+    domains: HashMap<String, Domain>,
     check_second: i16,
 }
 
 impl<'a> DnsPod<'a> {
     pub fn new(api_id: &'a str, api_token: &'a str, check_second: i16) -> Self {
-        return DnsPod { api_id, api_token, domains: HashMap::new(), check_second };
+        return DnsPod {
+            api_id,
+            api_token,
+            domains: HashMap::new(),
+            check_second,
+        };
     }
 
     fn get_login_token(&self) -> String {
@@ -48,9 +51,7 @@ impl<'a> DnsPod<'a> {
         for k in params.keys() {
             p.push((*k, params.get(k).unwrap().as_str()));
         }
-        let rsp = self.build_req("Domain.List")
-            .form(&p)
-            .send();
+        let rsp = self.build_req("Domain.List").form(&p).send();
         if let Ok(mut r) = rsp {
             return r.text().unwrap();
         } else {
@@ -58,23 +59,41 @@ impl<'a> DnsPod<'a> {
         }
         return String::from("");
     }
-    fn check_domains(&self) {
+
+    fn push_domain(&mut self, d: DomainDeserialize) {}
+
+    /// Check domains and push to domain map.
+    fn check_domains(&mut self) {
         if self.domains.len() > 0 {
             return;
         }
         let mut params = HashMap::new();
         let rsp = self.post("get_domain", &mut params);
-        println!("{}", rsp);
+        match serde_json::from_str::<DomainListResult>(&rsp) {
+            Ok(arr) => {
+                for d in arr.domains {
+                    self.domains
+                        .insert(d.name.to_owned(), Domain::new(d.id.to_string(), d.name));
+                }
+            }
+            Err(err) => println!("[ DDNS][ Dnspod]: fetch domain list failed :{}", err),
+        }
     }
 }
 
 impl<'a> NameServer for DnsPod<'a> {
-    fn get_domain(&self, name: &str) -> Option<Domain> {
+    fn get_domain(&mut self, name: &str) -> Option<&Domain> {
         self.check_domains();
-        return Some(Domain { id: "", name: "" });
+        if self.domains.contains_key(name) {
+            return self.domains.get(name);
+        }
+        return None;
     }
 
-    fn get_sub_domain<'b, 'c>(&self, sub: &'b str) -> Record<'c> where 'c: 'b {
+    fn get_sub_domain<'b, 'c>(&mut self, sub: &'b str) -> Record<'c>
+        where
+            'c: 'b,
+    {
         unimplemented!()
     }
 
@@ -90,4 +109,32 @@ impl<'a> NameServer for DnsPod<'a> {
     fn update_record<T: Error + Sized>(&self, record: Record<'a>) -> Result<String, T> {
         unimplemented!()
     }*/
+}
+
+#[derive(Deserialize, Debug)]
+struct DomainListResult {
+    domains: Vec<DomainDeserialize>,
+}
+
+#[derive(Deserialize, Debug)]
+struct DomainDeserialize {
+    id: i32,
+    status: String,
+    grade: String,
+    group_id: String,
+    searchengine_push: String,
+    is_mark: String,
+    ttl: String,
+    cname_speedup: String,
+    remark: String,
+    created_on: String,
+    updated_on: String,
+    punycode: String,
+    ext_status: String,
+    src_flag: String,
+    name: String,
+    grade_title: String,
+    is_vip: String,
+    owner: String,
+    records: String,
 }

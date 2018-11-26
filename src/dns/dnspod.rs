@@ -70,13 +70,14 @@ impl DnsPod {
         match serde_json::from_str::<DomainListResult>(&rsp) {
             Ok(arr) => {
                 for d in arr.domains {
-                    self.domains
-                        .insert(d.name.to_owned(),
-                                Domain {
-                                    id: d.id.to_string(),
-                                    name: d.name,
-                                    records: vec![],
-                                });
+                    self.domains.insert(
+                        d.name.to_owned(),
+                        Domain {
+                            id: d.id.to_string(),
+                            name: d.name,
+                            records: vec![],
+                        },
+                    );
                 }
             }
             Err(err) => println!("[ DDNS][ Dnspod]: fetch domain list failed :{}", err),
@@ -119,7 +120,9 @@ impl NameServer for DnsPod {
             let mut params = HashMap::new();
             params.insert("domain_id", domain_id.clone());
             params.insert("keyword", sub.to_owned());
-            let rsp = self.post("Record.List", &mut params).replace("\"type\":", "\"type_\":");
+            let rsp = self
+                .post("Record.List", &mut params)
+                .replace("\"type\":", "\"type_\":");
             match serde_json::from_str::<RecordListResult>(&rsp) {
                 Ok(data) => {
                     let mut arr = vec![];
@@ -160,11 +163,16 @@ impl NameServer for DnsPod {
             params.insert("domain_id", domain_id.clone());
             params.insert("record_id", record.id.to_owned());
             params.insert("sub_domain", record.sub.to_owned());
-            params.insert("record_type", self.record_type_text(record.record_type).to_owned());
+            params.insert(
+                "record_type",
+                self.record_type_text(record.record_type).to_owned(),
+            );
             params.insert("record_line", record.record_line.to_owned());
             params.insert("value", record.value.to_owned());
             params.insert("ttl", record.ttl.to_string());
-            let rsp = self.post("Record.Modify", &mut params).replace("\"type\":", "\"type_\":");
+            let rsp = self
+                .post("Record.Modify", &mut params)
+                .replace("\"type\":", "\"type_\":");
             if let Ok(r) = serde_json::from_str::<DnsResult>(&rsp) {
                 if r.status.code == "1" {
                     return Ok(r.status.message);
@@ -188,7 +196,7 @@ impl NameServer for DnsPod {
 
 #[derive(Deserialize, Debug)]
 struct DnsResult {
-    status: Status
+    status: Status,
 }
 
 #[derive(Deserialize, Debug)]

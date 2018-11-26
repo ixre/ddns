@@ -31,14 +31,13 @@ pub fn sync_ip<I:ip::IpAddrFetch, T>(sp: I, sec: u8, callback: T)
     callback(&sp.addr());
 }*/
 
-
 pub fn sync_public_ip(sp: ip::SpNames, sec: u8) {
     thread::spawn(move || {
         let sp = ip::new(sp);
         loop {
-// 获取本机的IP
+            // 获取本机的IP
             let addr = sp.addr();
-// 保存IP到全局静态变量
+            // 保存IP到全局静态变量
             unsafe {
                 PUBLIC_IP_ADDR = Some(addr);
             }
@@ -63,7 +62,6 @@ pub struct Domain {
     pub name: String,
     pub records: Vec<Record>,
 }
-
 
 // Dns record
 #[derive(Debug)]

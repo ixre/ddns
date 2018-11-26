@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::error::Error;
 
 use super::{Domain, NameServer, Record};
 
@@ -58,11 +57,14 @@ impl DnsPod {
         return String::from("");
     }
 
-    fn push_domain(&mut self, d: DomainDeserialize) {}
 
     /// Check domains and push to domain map.
     fn check_domains(&mut self) {
         if self.domains.len() > 0 {
+            return;
+        }
+        if self.api_id == "" || self.api_token == "" {
+            println!("[ DDNS][ DnsPod]: api_id or api_token is empty.");
             return;
         }
         let mut params = HashMap::new();
@@ -89,7 +91,7 @@ impl DnsPod {
             "A" => super::RECORD_TYPE_A,
             "CNAME" => super::RECORD_TYPE_CNAME,
             "TXT" => super::RECORD_TYPE_TXT,
-            "MX" => super::RECORD_TYPE_TXT,
+            "MX" => super::RECORD_TYPE_MX,
             _ => 0_i8,
         };
     }
@@ -99,7 +101,7 @@ impl DnsPod {
             super::RECORD_TYPE_A => "A",
             super::RECORD_TYPE_CNAME => "CNAME",
             super::RECORD_TYPE_TXT => "TXT",
-            super::RECORD_TYPE_TXT => "MX",
+            super::RECORD_TYPE_MX => "MX",
             _ => "",
         };
     }

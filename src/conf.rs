@@ -1,4 +1,3 @@
-use std::fs;
 use std::fs::File;
 use std::io;
 use std::process::exit;
@@ -60,7 +59,7 @@ pub fn read_conf(path: &str) -> DnsConfig {
 fn default_config() -> DnsConfig {
     let records = vec![DnsRecord {
         name: String::from("@"),
-        ttl: 60,
+        ttl: 600,
         dyn_pub: 1,
     }];
     let domains = vec![DnsDomain {

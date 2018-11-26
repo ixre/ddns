@@ -7,12 +7,12 @@ const DNS_API_SERVER: &str = "https://dnsapi.cn";
 
 pub struct DnsPod {
     pub api_id: String,
-    pub api_token:String,
+    pub api_token: String,
     pub domains: HashMap<String, Domain>,
 }
 
 impl DnsPod {
-    pub fn new(api_id:String, api_token:String) -> Self {
+    pub fn new(api_id: String, api_token: String) -> Self {
         return DnsPod {
             api_id,
             api_token,
@@ -71,7 +71,12 @@ impl DnsPod {
             Ok(arr) => {
                 for d in arr.domains {
                     self.domains
-                        .insert(d.name.to_owned(), Domain { id: d.id.to_string(), name: d.name });
+                        .insert(d.name.to_owned(),
+                                Domain {
+                                    id: d.id.to_string(),
+                                    name: d.name,
+                                    records: vec![],
+                                });
                 }
             }
             Err(err) => println!("[ DDNS][ Dnspod]: fetch domain list failed :{}", err),
@@ -99,7 +104,7 @@ impl DnsPod {
     }
 }
 
-impl NameServer for DnsPod{
+impl NameServer for DnsPod {
     fn get_domain(&mut self, domain: &str) -> Option<&Domain> {
         self.check_domains();
         if self.domains.contains_key(domain) {
@@ -110,19 +115,18 @@ impl NameServer for DnsPod{
 
     fn get_record(&mut self, domain: &str, sub: &str) -> Vec<Record> {
         if let Some(d) = self.get_domain(domain) {
-            let domainId = d.id.to_owned();
+            let domain_id = d.id.to_owned();
             let mut params = HashMap::new();
-            params.insert("domain_id", domainId.clone());
+            params.insert("domain_id", domain_id.clone());
             params.insert("keyword", sub.to_owned());
             let rsp = self.post("Record.List", &mut params).replace("\"type\":", "\"type_\":");
             match serde_json::from_str::<RecordListResult>(&rsp) {
                 Ok(data) => {
                     let mut arr = vec![];
                     for r in data.records {
-                        // 从另外的对象拷贝数据，都需要to_owned()
                         arr.push(Record {
                             id: r.id.to_owned(),
-                            domain_id: domainId.clone(),
+                            domain_id: domain_id.clone(),
                             sub: r.name.to_owned(),
                             record_type: self.record_type(&r.type_),
                             record_line: r.line.to_owned(),

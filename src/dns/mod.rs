@@ -59,9 +59,11 @@ pub const RECORD_TYPE_MX: i8 = 4;
 // Domain
 #[derive(Debug)]
 pub struct Domain {
-    id: String,
-    name: String,
+    pub id: String,
+    pub name: String,
+    pub records: Vec<Record>,
 }
+
 
 // Dns record
 #[derive(Debug)]
@@ -72,7 +74,7 @@ pub struct Record {
     pub record_type: i8,
     pub record_line: String,
     pub value: String,
-    pub ttl: i16,
+    pub ttl: i32,
 }
 
 impl Record {

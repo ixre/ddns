@@ -48,7 +48,6 @@ impl InternalIp {
         let ip_arr: io::Result<Vec<IpAddr>> = (host.as_str(), 0)
             .to_socket_addrs()
             .map(|iter| iter.map(|socket_address| socket_address.ip()).collect());
-        println!("{:#?}", ip_arr);
         if let Ok(ip_arr) = ip_arr {
             for arr in ip_arr {
                 match arr {

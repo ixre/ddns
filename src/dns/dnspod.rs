@@ -57,7 +57,6 @@ impl DnsPod {
         return String::from("");
     }
 
-
     /// Check domains and push to domain map.
     fn check_domains(&mut self) {
         if self.domains.len() > 0 {

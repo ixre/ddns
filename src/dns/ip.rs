@@ -1,8 +1,9 @@
-use hostname::get_hostname;
-use regex::Regex;
 use std::io;
 use std::net::IpAddr;
 use std::net::ToSocketAddrs;
+use std::process::exit;
+
+use regex::Regex;
 
 // 获取公网IP
 pub trait IpAddrFetch {
@@ -36,28 +37,55 @@ struct InternalIp {}
 impl InternalIp {
     fn ip(&self) -> Result<String, io::Error> {
         // 这里是std::error::Error
-        let host = get_hostname().unwrap();
+        let host = sys_info::hostname().unwrap();
+        if host == "localhost" {
+            println!("Must update a new name to continue. You can use follow command:\n");
+            println!("'echo host > /etc/hostname'; (Permanent) and reboot or \n'sudo hostname host', replace host with your hostname.\n");
+            exit(1);
+        }
+        //println!("{}",&hostx);
+
         let ip_arr: io::Result<Vec<IpAddr>> = (host.as_str(), 0)
             .to_socket_addrs()
             .map(|iter| iter.map(|socket_address| socket_address.ip()).collect());
-        if ip_arr.is_ok() {
-            let arr = ip_arr?; // 这里是io::Error
-            let arr = arr.first().unwrap();
-            match arr {
-                IpAddr::V4(ip4) => {
-                    let mut s = String::from("");
-                    for i in &ip4.octets() {
-                        if s.len() > 0 {
-                            s.push_str(".");
+        println!("{:#?}", ip_arr);
+        if let Ok(ip_arr) = ip_arr {
+            for arr in ip_arr {
+                match arr {
+                    IpAddr::V4(ip4) => {
+                        let mut s = String::from("");
+                        for i in &ip4.octets() {
+                            if s.len() > 0 {
+                                s.push_str(".");
+                            }
+                            s.push_str(&(*i as u32).to_string());
                         }
-                        s.push_str(&(*i as u32).to_string());
+                        // Checking ip are local area ip
+                        if !s.starts_with("172.") && !s.starts_with("127.") {
+                            return Ok(s);
+                        }
                     }
-                    return Ok(s);
+                    IpAddr::V6(_ip6) => (),
                 }
-                IpAddr::V6(_ip6) => (),
             }
         }
-        return Ok(String::from("127.0.0.1"));
+
+        /*
+        let arr = ip_arr.unwrap().first().unwrap();
+        match arr {
+            IpAddr::V4(ip4) => {
+                let mut s = String::from("");
+                for i in &ip4.octets() {
+                    if s.len() > 0 {
+                        s.push_str(".");
+                    }
+                    s.push_str(&(*i as u32).to_string());
+                }
+                return Ok(s);
+            }
+            IpAddr::V6(_ip6) => (),
+        }*/
+        return Ok(String::from(""));
     }
 }
 

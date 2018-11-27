@@ -10,7 +10,7 @@ use ddns::dns::dnspod;
 use ddns::dns::ip;
 use ddns::dns::NameServer;
 
-const VERSION: &str = "1.0";
+const VERSION: &str = "1.0.1";
 const RELEASE_DATE: &str = "2018-12-01";
 
 fn print_licence() {
@@ -21,10 +21,12 @@ fn main() {
     let args = [
         Arg::with_name("conf")
             .long("conf")
+            .short("c")
             .takes_value(true)
             .default_value("./ddns.conf"),
         Arg::with_name("debug")
             .long("debug")
+            .short("d")
             .takes_value(false),
     ];
     let matches = App::new("ddns").args(&args).get_matches();
@@ -70,9 +72,20 @@ fn main() {
 
     let sp = ip::new(ip::SpNames::ORG3322);
     let in_sp = ip::new(ip::SpNames::Internal);
+
     loop {
         let addr = sp.addr();
         let in_addr = in_sp.addr();
+        if &in_addr == "" {
+            println!("[ DDNS][ Err]: Can't get your local area ip address");
+            thread::sleep(Duration::from_secs(60));
+            continue;
+        }
+        println!(
+            "[ DDNS][ Fetch]: Local ip = {} ; Public ip = {}",
+            &in_addr, &addr
+        );
+
         let mut i = 0;
         for ns in &mut ns_list {
             let map = ns_record.get_mut(i).unwrap();

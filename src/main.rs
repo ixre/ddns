@@ -20,10 +20,12 @@ fn print_licence() {
 fn main() {
     let args = [
         Arg::with_name("conf")
-            .short("c")
+            .long("conf")
             .takes_value(true)
             .default_value("./ddns.conf"),
-        Arg::with_name("debug").short("d").takes_value(false),
+        Arg::with_name("debug")
+            .long("debug")
+            .takes_value(false),
     ];
     let matches = App::new("ddns").args(&args).get_matches();
     let conf = matches.value_of("conf").unwrap();

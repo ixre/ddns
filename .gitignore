@@ -3,5 +3,6 @@ dist
 Cargo.lock
 target/
 tmp
+dist
 **/*.rs.bk
 ddns.conf

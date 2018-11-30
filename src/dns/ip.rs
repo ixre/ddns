@@ -60,7 +60,7 @@ impl InternalIp {
                             s.push_str(&(*i as u32).to_string());
                         }
                         // Checking ip are local area ip
-                        if !s.starts_with("172.") && !s.starts_with("127.") {
+                        if !s.starts_with("127.") {
                             return Ok(s);
                         }
                     }

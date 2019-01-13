@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::process::exit;
 use std::thread;
 use std::time::Duration;
 
@@ -40,7 +41,10 @@ fn main() {
     let mut ns_record: Vec<HashMap<String, Vec<dns::Record>>> = vec![];
     // Dns record ip map
     let mut ns_dyn_type: Vec<HashMap<String, i8>> = vec![];
-    for sp in cfg.dns_config {
+    if cfg.is_none() {
+        exit(1);
+    }
+    for sp in cfg.unwrap().dns_config {
         let mut ns = dnspod::DnsPod::new(sp.api_id, sp.api_token);
         let mut domain_map = HashMap::new();
         let mut dyn_type_map = HashMap::new();

@@ -1,6 +1,5 @@
 use std::fs::File;
-use std::io;
-use std::process::exit;
+use std::io::ErrorKind;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DnsConfig {
@@ -32,26 +31,26 @@ pub struct DnsRecord {
     pub dyn_pub: i8,
 }
 
-pub fn read_conf(path: &str) -> DnsConfig {
+pub fn read_conf(path: &str) -> Option<DnsConfig> {
     return match File::open(path) {
         Err(ref err) => {
             let conf = default_config();
-            if err.kind() == io::ErrorKind::NotFound {
+            if err.kind() == ErrorKind::NotFound {
                 if let Ok(r) = File::create(path) {
                     let _ = serde_json::to_writer_pretty(r, &conf);
                 }
             }
-            return conf;
+            Some(conf)
         }
         Ok(r) => {
             let conf = serde_json::from_reader::<File, DnsConfig>(r);
-            return match conf {
-                Ok(c) => c,
+            match conf {
+                Ok(c) => Some(c),
                 Err(err) => {
                     println!("[ DDNS][ Config]: Load config failed :{}", err);
-                    exit(1);
+                    None
                 }
-            };
+            }
         }
     };
 }
